@@ -9,21 +9,26 @@ export default function Register() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hasUsers, setHasUsers] = useState(true); // 默认 true，不显示管理员提示
+  const [hasUsers, setHasUsers] = useState(true);
+  const [siteName, setSiteName] = useState('MchengFlow');
   const { register } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 检查是否已有用户
-    const checkUsers = async () => {
+    // 检查是否已有用户 & 获取网站名称
+    const init = async () => {
       try {
-        const { data } = await api.get('/auth/has-users');
-        setHasUsers(data.hasUsers);
+        const [usersRes, settingsRes] = await Promise.all([
+          api.get('/auth/has-users').catch(() => ({ data: { hasUsers: true } })),
+          api.get('/settings/public').catch(() => ({ data: {} }))
+        ]);
+        setHasUsers(usersRes.data.hasUsers);
+        if (settingsRes.data.siteName) setSiteName(settingsRes.data.siteName);
       } catch (err) {
-        console.log('Could not check users');
+        console.log('Init error');
       }
     };
-    checkUsers();
+    init();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -49,7 +54,7 @@ export default function Register() {
             <Sparkles size={22} />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            GeminiFlow
+            {siteName}
           </h1>
         </div>
 

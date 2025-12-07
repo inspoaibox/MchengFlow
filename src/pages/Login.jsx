@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 export default function Login() {
@@ -8,8 +9,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [siteName, setSiteName] = useState('MchengFlow');
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/settings/public').then(res => {
+      if (res.data.siteName) setSiteName(res.data.siteName);
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +41,7 @@ export default function Login() {
             <Sparkles size={22} />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            GeminiFlow
+            {siteName}
           </h1>
         </div>
 
