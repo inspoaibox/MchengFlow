@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../server/db/app.db"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  email     String    @unique
+  role      String    @default("user")
+  createdAt DateTime  @default(now()) @map("created_at")
+  projects  Project[]
+  tasks     Task[]
+
+  @@map("users")
+}
+
+model Settings {
+  id                Int      @id @default(1)
+  siteName          String   @default("MchengFlow") @map("site_name")
+  allowRegistration Int      @default(1) @map("allow_registration")
+  defaultRole       String   @default("user") @map("default_role")
+  defaultModel      String   @default("") @map("default_model")
+  allowedFileTypes  String   @default(".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.zip") @map("allowed_file_types")
+  maxFileSize       Int      @default(10) @map("max_file_size")
+  updatedAt         DateTime @default(now()) @map("updated_at")
+
+  @@map("settings")
+}
+
+model AiChannel {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  baseUrl   String?  @map("base_url")
+  apiKey    String   @map("api_key")
+  models    String   @default("[]")
+  enabled   Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("ai_channels")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  ownerId     Int?     @map("owner_id")
+  name        String?
+  title       String?
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User?    @relation(fields: [userId], references: [id])
+  tasks       Task[]
+
+  @@map("projects")
+}
+
+model Task {
+  id           Int          @id @default(autoincrement())
+  projectId    Int?         @map("project_id")
+  userId       Int?         @map("user_id")
+  title        String
+  description  String?
+  columnStatus String       @default("todo") @map("column_status")
+  dueDate      String?      @map("due_date")
+  priority     String       @default("p2")
+  completedAt  String?      @map("completed_at")
+  subtasks     String       @default("[]")
+  tags         String       @default("[]")
+  chatHistory  String       @default("[]") @map("chat_history")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  project      Project?     @relation(fields: [projectId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+  attachments  Attachment[]
+
+  @@map("tasks")
+}
+
+model Attachment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int      @map("task_id")
+  userId    Int      @map("user_id")
+  filename  String
+  originalName String @map("original_name")
+  mimeType  String   @map("mime_type")
+  size      Int
+  createdAt DateTime @default(now()) @map("created_at")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
