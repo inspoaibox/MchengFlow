@@ -36,7 +36,15 @@ import {
   Download,
   FileText,
   Upload,
-  DatabaseBackup
+  DatabaseBackup,
+  Search,
+  Moon,
+  Sun,
+  BarChart3,
+  Bell,
+  BellRing,
+  TrendingUp,
+  PieChart
 } from 'lucide-react';
 
 /**
@@ -372,6 +380,78 @@ export default function App() {
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef(null);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return false;
+  });
+  
+  // Stats modal state
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+
+  // Dark mode effect
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('darkMode', String(darkMode));
+  }, [darkMode]);
+
+  // Search results
+  const searchResults = searchQuery.trim() ? tasks.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) : [];
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setIsSearchOpen(false);
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Task reminder check
+  useEffect(() => {
+    if (!dataLoaded || tasks.length === 0) return;
+    
+    const checkReminders = () => {
+      const today = new Date().toISOString().split('T')[0];
+      const dueTodayTasks = tasks.filter(t => t.dueDate === today && t.column !== 'done');
+      const overdueTasks = tasks.filter(t => t.dueDate && t.dueDate < today && t.column !== 'done');
+      
+      if (dueTodayTasks.length > 0 || overdueTasks.length > 0) {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('MchengFlow 任务提醒', {
+            body: `您有 ${dueTodayTasks.length} 个今日待办，${overdueTasks.length} 个已逾期任务`,
+            icon: '/icon-192.svg'
+          });
+        }
+      }
+    };
+    
+    const hasShownToday = sessionStorage.getItem('reminderShown') === new Date().toDateString();
+    if (!hasShownToday) {
+      setTimeout(checkReminders, 2000);
+      sessionStorage.setItem('reminderShown', new Date().toDateString());
+    }
+  }, [dataLoaded, tasks]);
 
   const [activeTask, setActiveTask] = useState(null);
   const [activeTab, setActiveTab] = useState('details'); 
@@ -941,6 +1021,49 @@ export default function App() {
     }
   }, [activeTask?.chatHistory, activeTab]);
 
+  // 统计数据计算
+  const getStats = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const thisWeekStart = new Date();
+    thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    
+    const completedTasks = tasks.filter(t => t.column === 'done');
+    const completedThisWeek = completedTasks.filter(t => t.completedAt && new Date(t.completedAt) >= thisWeekStart);
+    const completedThisMonth = completedTasks.filter(t => t.completedAt && new Date(t.completedAt) >= thisMonthStart);
+    
+    const overdueTasks = tasks.filter(t => t.dueDate && t.dueDate < today && t.column !== 'done');
+    const dueTodayTasks = tasks.filter(t => t.dueDate === today && t.column !== 'done');
+    
+    const byPriority = {
+      p1: tasks.filter(t => t.priority === 'p1' && t.column !== 'done').length,
+      p2: tasks.filter(t => t.priority === 'p2' && t.column !== 'done').length,
+      p3: tasks.filter(t => t.priority === 'p3' && t.column !== 'done').length,
+      p4: tasks.filter(t => t.priority === 'p4' && t.column !== 'done').length,
+    };
+    
+    const byColumn = {
+      backlog: tasks.filter(t => t.column === 'backlog').length,
+      todo: tasks.filter(t => t.column === 'todo').length,
+      'in-progress': tasks.filter(t => t.column === 'in-progress').length,
+      done: completedTasks.length,
+    };
+    
+    return {
+      total: tasks.length,
+      completed: completedTasks.length,
+      completedThisWeek: completedThisWeek.length,
+      completedThisMonth: completedThisMonth.length,
+      overdue: overdueTasks.length,
+      dueToday: dueTodayTasks.length,
+      completionRate: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0,
+      byPriority,
+      byColumn,
+      projectCount: projects.length
+    };
+  };
+
   // 导出数据
   const handleExportData = async () => {
     setIsExporting(true);
@@ -1037,8 +1160,61 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-             <button 
+        <div className="flex items-center gap-2">
+            {/* Search Button */}
+            <button 
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all text-sm"
+                title="搜索 (Ctrl+K)"
+            >
+                <Search size={18} />
+                <span className="hidden md:inline text-xs text-slate-400">Ctrl+K</span>
+            </button>
+            
+            {/* Stats Button */}
+            <button 
+                onClick={() => setIsStatsModalOpen(true)}
+                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                title="统计数据"
+            >
+                <BarChart3 size={18} />
+            </button>
+            
+            {/* Reminder Button */}
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const urgentCount = tasks.filter(t => (t.dueDate === today || (t.dueDate && t.dueDate < today)) && t.column !== 'done').length;
+              return (
+                <button 
+                    onClick={() => {
+                      if ('Notification' in window && Notification.permission !== 'granted') {
+                        Notification.requestPermission();
+                      }
+                      setCurrentView('daily');
+                    }}
+                    className={`p-2 rounded-lg transition-all relative ${urgentCount > 0 ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                    title={urgentCount > 0 ? `${urgentCount} 个紧急任务` : '无紧急任务'}
+                >
+                    {urgentCount > 0 ? <BellRing size={18} className="animate-pulse" /> : <Bell size={18} />}
+                    {urgentCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                        {urgentCount > 9 ? '9+' : urgentCount}
+                      </span>
+                    )}
+                </button>
+              );
+            })()}
+            
+            {/* Dark Mode Toggle */}
+            <button 
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                title={darkMode ? '切换亮色模式' : '切换深色模式'}
+            >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            
+            <button 
                 onClick={() => setIsProjectModalOpen(true)}
                 className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-medium whitespace-nowrap"
             >
@@ -1299,14 +1475,32 @@ export default function App() {
 
         {/* VIEW: KANBAN BOARD */}
         {currentView === 'board' && activeProject && (
-            <div className="h-full overflow-x-auto">
-                 <div className="flex gap-6 h-full min-w-[1024px]">
+            <div className="h-full flex flex-col">
+                {/* Project Header */}
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-200">
+                    <button 
+                        onClick={() => setCurrentView('projects')}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">{activeProject.title}</h2>
+                        {activeProject.description && (
+                            <p className="text-sm text-slate-500 mt-0.5">{activeProject.description}</p>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Kanban Columns */}
+                <div className="flex-1 overflow-x-auto">
+                 <div className="flex gap-4 h-full pb-4">
                   {columns.map(col => (
                     <div 
                       key={col.id} 
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDropColumn(e, col.id)}
-                      className="flex-1 min-w-[280px] max-w-[350px] flex flex-col h-full"
+                      className="flex-1 min-w-[280px] flex flex-col h-full"
                     >
                       <div className={`flex items-center justify-between p-3 rounded-t-lg border-b-2 border-slate-200 ${col.color} bg-opacity-50`}>
                         <h2 className="font-semibold text-slate-700 flex items-center gap-2">
@@ -1338,6 +1532,7 @@ export default function App() {
                       </div>
                     </div>
                   ))}
+                </div>
                 </div>
             </div>
         )}
@@ -1829,6 +2024,182 @@ export default function App() {
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* Search Modal */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-sm" onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
+              <Search size={20} className="text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索任务..."
+                className="flex-1 text-lg bg-transparent border-none focus:ring-0 focus:outline-none"
+                autoFocus
+              />
+              <kbd className="px-2 py-1 text-xs bg-slate-100 text-slate-500 rounded">ESC</kbd>
+            </div>
+            
+            <div className="max-h-[50vh] overflow-y-auto">
+              {searchQuery.trim() && searchResults.length === 0 && (
+                <div className="p-8 text-center text-slate-500">
+                  <Search size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>未找到匹配的任务</p>
+                </div>
+              )}
+              
+              {searchResults.map(task => (
+                <button
+                  key={task.id}
+                  onClick={() => { openTask(task); setIsSearchOpen(false); setSearchQuery(''); }}
+                  className="w-full px-4 py-3 flex items-start gap-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 last:border-0"
+                >
+                  <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                    task.column === 'done' ? 'bg-emerald-500' : 
+                    task.priority === 'p1' ? 'bg-red-500' : 
+                    task.priority === 'p2' ? 'bg-amber-500' : 'bg-slate-300'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium ${task.column === 'done' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                      {task.title}
+                    </div>
+                    {task.description && (
+                      <p className="text-sm text-slate-500 truncate">{task.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                      {task.projectId && (
+                        <span className="bg-slate-100 px-1.5 py-0.5 rounded">
+                          {projects.find(p => p.id === task.projectId)?.title || '项目'}
+                        </span>
+                      )}
+                      {task.dueDate && <span>{task.dueDate}</span>}
+                    </div>
+                  </div>
+                </button>
+              ))}
+              
+              {!searchQuery.trim() && (
+                <div className="p-6 text-center text-slate-400 text-sm">
+                  输入关键词搜索任务标题、描述或标签
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Modal */}
+      <Modal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} size="lg">
+        {(() => {
+          const stats = getStats();
+          return (
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <BarChart3 size={24} className="text-indigo-600" />
+                  数据统计
+                </h2>
+                <button onClick={() => setIsStatsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                  <X size={24} />
+                </button>
+              </div>
+              
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl p-4 text-white">
+                  <div className="text-3xl font-bold">{stats.total}</div>
+                  <div className="text-sm opacity-80">总任务数</div>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white">
+                  <div className="text-3xl font-bold">{stats.completionRate}%</div>
+                  <div className="text-sm opacity-80">完成率</div>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-4 text-white">
+                  <div className="text-3xl font-bold">{stats.dueToday}</div>
+                  <div className="text-sm opacity-80">今日待办</div>
+                </div>
+                <div className="bg-gradient-to-br from-red-500 to-pink-500 rounded-xl p-4 text-white">
+                  <div className="text-3xl font-bold">{stats.overdue}</div>
+                  <div className="text-sm opacity-80">已逾期</div>
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* By Status */}
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <PieChart size={18} /> 按状态分布
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'backlog', label: '积压工作', color: 'bg-slate-400' },
+                      { key: 'todo', label: '待办事项', color: 'bg-blue-500' },
+                      { key: 'in-progress', label: '进行中', color: 'bg-indigo-500' },
+                      { key: 'done', label: '已完成', color: 'bg-emerald-500' },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                        <span className="flex-1 text-sm text-slate-600">{item.label}</span>
+                        <span className="font-semibold text-slate-800">{stats.byColumn[item.key]}</span>
+                        <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${item.color}`} 
+                            style={{ width: `${stats.total > 0 ? (stats.byColumn[item.key] / stats.total) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* By Priority */}
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <AlertCircle size={18} /> 按优先级分布（未完成）
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'p1', label: '重要且紧急', color: 'bg-red-500' },
+                      { key: 'p2', label: '重要不紧急', color: 'bg-amber-500' },
+                      { key: 'p3', label: '紧急不重要', color: 'bg-blue-500' },
+                      { key: 'p4', label: '不重要不紧急', color: 'bg-slate-400' },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                        <span className="flex-1 text-sm text-slate-600">{item.label}</span>
+                        <span className="font-semibold text-slate-800">{stats.byPriority[item.key]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Weekly Stats */}
+              <div className="mt-6 bg-slate-50 rounded-xl p-4">
+                <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                  <TrendingUp size={18} /> 完成趋势
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-emerald-600">{stats.completedThisWeek}</div>
+                    <div className="text-xs text-slate-500">本周完成</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-indigo-600">{stats.completedThisMonth}</div>
+                    <div className="text-xs text-slate-500">本月完成</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-violet-600">{stats.projectCount}</div>
+                    <div className="text-xs text-slate-500">项目总数</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
     </div>
