@@ -49,7 +49,9 @@ import {
   UserPlus,
   Edit2,
   Pin,
-  Palette
+  Palette,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 
 /**
@@ -248,7 +250,7 @@ const ProjectCard = ({ project, taskStats, onClick, onDelete, onEdit }) => {
 };
 
 // --- Project Card Compact Component (for column view) ---
-const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onTogglePin, onChangeColor }) => {
+const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onTogglePin, onChangeColor, onArchive, showArchiveButton = false }) => {
     const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
     const [showColorPicker, setShowColorPicker] = useState(false);
     
@@ -314,6 +316,15 @@ const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onT
                     >
                         <Edit2 size={14} />
                     </button>
+                    {showArchiveButton && onArchive && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onArchive(project); }}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-emerald-600"
+                            title="归档项目"
+                        >
+                            <Archive size={14} />
+                        </button>
+                    )}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
                         className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-red-500"
@@ -516,6 +527,9 @@ export default function App() {
   // Project edit modal state
   const [isProjectEditModalOpen, setIsProjectEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  
+  // Archived projects modal state
+  const [isArchivedModalOpen, setIsArchivedModalOpen] = useState(false);
   
   // Daily view filter: 'all' | 'project' | 'standalone'
   const [dailyFilter, setDailyFilter] = useState('all');
@@ -811,6 +825,25 @@ export default function App() {
       setProjects(prev => prev.map(p => p.id === project.id ? { ...p, color } : p));
     } catch (err) {
       console.error('Failed to change color', err);
+    }
+  };
+
+  const handleArchiveProject = async (project) => {
+    if (!confirm('确定要归档此项目吗？归档后可在"归档项目"中查看。')) return;
+    try {
+      await api.put(`/projects/${project.id}`, { ...project, archived: 1 });
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, archived: 1 } : p));
+    } catch (err) {
+      console.error('Failed to archive project', err);
+    }
+  };
+
+  const handleUnarchiveProject = async (project) => {
+    try {
+      await api.put(`/projects/${project.id}`, { ...project, archived: 0 });
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, archived: 0 } : p));
+    } catch (err) {
+      console.error('Failed to unarchive project', err);
     }
   };
 
@@ -1436,6 +1469,13 @@ export default function App() {
                 </button>
                 
                 <button 
+                  onClick={() => setIsArchivedModalOpen(true)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Archive size={16} /> 归档项目 ({projects.filter(p => p.archived === 1).length})
+                </button>
+                
+                <button 
                   onClick={logout}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
@@ -1469,13 +1509,13 @@ export default function App() {
                                         <span className="text-lg">⏳</span> 待开始
                                     </h3>
                                     <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">
-                                        {projects.filter(p => p.status === 'pending').length}
+                                        {projects.filter(p => p.status === 'pending' && !p.archived).length}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-3 space-y-3">
                                 {projects
-                                    .filter(p => p.status === 'pending')
+                                    .filter(p => p.status === 'pending' && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
                                     .map(project => (
                                         <ProjectCardCompact 
@@ -1500,13 +1540,13 @@ export default function App() {
                                         <span className="text-lg">🔄</span> 进行中
                                     </h3>
                                     <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-medium">
-                                        {projects.filter(p => p.status === 'active' || !p.status).length}
+                                        {projects.filter(p => (p.status === 'active' || !p.status) && !p.archived).length}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-3 space-y-3">
                                 {projects
-                                    .filter(p => p.status === 'active' || !p.status)
+                                    .filter(p => (p.status === 'active' || !p.status) && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
                                     .map(project => (
                                         <ProjectCardCompact 
@@ -1531,13 +1571,13 @@ export default function App() {
                                         <span className="text-lg">✅</span> 已完成
                                     </h3>
                                     <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-medium">
-                                        {projects.filter(p => p.status === 'completed').length}
+                                        {projects.filter(p => p.status === 'completed' && !p.archived).length}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-3 space-y-3">
                                 {projects
-                                    .filter(p => p.status === 'completed')
+                                    .filter(p => p.status === 'completed' && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
                                     .map(project => (
                                         <ProjectCardCompact 
@@ -1549,6 +1589,8 @@ export default function App() {
                                             onEdit={(p) => { setEditingProject({...p}); setIsProjectEditModalOpen(true); }}
                                             onTogglePin={handleToggleProjectPin}
                                             onChangeColor={handleChangeProjectColor}
+                                            onArchive={handleArchiveProject}
+                                            showArchiveButton={true}
                                         />
                                     ))}
                             </div>
@@ -1622,6 +1664,17 @@ export default function App() {
                                 {viewDate.toLocaleDateString('zh-CN', { weekday: 'long' })}
                             </p>
                         </div>
+                        <input
+                          type="date"
+                          value={viewDate.toISOString().split('T')[0]}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setViewDate(new Date(e.target.value + 'T00:00:00'));
+                            }
+                          }}
+                          className="w-8 h-8 cursor-pointer bg-transparent border-none text-transparent [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                          title="选择日期"
+                        />
                         <button onClick={handleNextDay} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"><ChevronRight size={18} /></button>
                       </div>
                       
@@ -2711,6 +2764,63 @@ export default function App() {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Archived Projects Modal */}
+      <Modal isOpen={isArchivedModalOpen} onClose={() => setIsArchivedModalOpen(false)} size="lg">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <Archive size={24} className="text-slate-600" />
+              归档项目
+            </h2>
+            <button onClick={() => setIsArchivedModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <X size={24} />
+            </button>
+          </div>
+          
+          <div className="max-h-[60vh] overflow-y-auto">
+            {projects.filter(p => p.archived === 1).length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <Archive size={48} className="mx-auto mb-4 opacity-30" />
+                <p>暂无归档项目</p>
+                <p className="text-sm mt-1">已完成的项目可以归档以保持工作区整洁</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects
+                  .filter(p => p.archived === 1)
+                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .map(project => (
+                    <div key={project.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-between group">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-slate-700">{project.title}</h4>
+                        <p className="text-sm text-slate-500 truncate">{project.description || '暂无描述'}</p>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                          <span>{getProjectStats(project.id).done}/{getProjectStats(project.id).total} 任务</span>
+                          <span>归档于 {new Date(project.createdAt).toLocaleDateString('zh-CN')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleUnarchiveProject(project)}
+                          className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                        >
+                          <ArchiveRestore size={14} /> 恢复
+                        </button>
+                        <button
+                          onClick={() => deleteProject(project.id)}
+                          className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                        >
+                          <Trash2 size={14} /> 删除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
 
     </div>

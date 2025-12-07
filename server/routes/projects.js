@@ -27,6 +27,7 @@ router.get('/', authMiddleware, async (req, res) => {
       endDate: p.endDate,
       pinned: p.pinned || 0,
       color: p.color || null,
+      archived: p.archived || 0,
       userId: p.userId || p.ownerId,
       createdAt: p.createdAt
     }));
@@ -74,9 +75,9 @@ router.post('/', authMiddleware, async (req, res) => {
 // 更新项目
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { title, description, status, assignees, startDate, endDate, pinned, color } = req.body;
+    const { title, description, status, assignees, startDate, endDate, pinned, color, archived } = req.body;
     
-    console.log('Update project request:', { id: req.params.id, status, title, pinned, color });
+    console.log('Update project request:', { id: req.params.id, status, title, pinned, color, archived });
     
     const project = await prisma.project.findFirst({
       where: { 
@@ -101,6 +102,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (endDate !== undefined) updateData.endDate = endDate;
     if (pinned !== undefined) updateData.pinned = pinned;
     if (color !== undefined) updateData.color = color;
+    if (archived !== undefined) updateData.archived = archived;
     
     console.log('Update data:', updateData);
     
@@ -123,6 +125,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         endDate: updated.endDate,
         pinned: updated.pinned || 0,
         color: updated.color || null,
+        archived: updated.archived || 0,
         createdAt: updated.createdAt
       }
     });

@@ -27,6 +27,13 @@ export default function Admin() {
   });
   const [fetchingModels, setFetchingModels] = useState(null);
   
+  // 用户表单
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({
+    username: '', email: '', password: '', role: 'user'
+  });
+  
   // 系统设置
   const [settings, setSettings] = useState({
     siteName: 'GeminiFlow',
@@ -90,13 +97,59 @@ export default function Admin() {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('确定删除此用户？')) return;
+    if (!confirm('确定删除此用户？该用户的所有数据将被保留。')) return;
     try {
       await api.delete(`/users/${userId}`);
       loadUsers();
       showMsg('用户已删除');
     } catch (err) {
       showMsg(err.response?.data?.error || '删除失败', true);
+    }
+  };
+
+  // 用户管理
+  const openUserModal = (u = null) => {
+    if (u) {
+      setEditingUser(u);
+      setUserForm({
+        username: u.username,
+        email: u.email,
+        password: '',
+        role: u.role
+      });
+    } else {
+      setEditingUser(null);
+      setUserForm({ username: '', email: '', password: '', role: 'user' });
+    }
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!userForm.username || !userForm.email) {
+      showMsg('请填写用户名和邮箱', true);
+      return;
+    }
+    if (!editingUser && !userForm.password) {
+      showMsg('请填写密码', true);
+      return;
+    }
+    if (userForm.password && userForm.password.length < 6) {
+      showMsg('密码至少6位', true);
+      return;
+    }
+    
+    try {
+      if (editingUser) {
+        await api.put(`/users/${editingUser.id}`, userForm);
+        showMsg('用户更新成功');
+      } else {
+        await api.post('/users', userForm);
+        showMsg('用户创建成功');
+      }
+      setShowUserModal(false);
+      loadUsers();
+    } catch (err) {
+      showMsg(err.response?.data?.error || '操作失败', true);
     }
   };
 
@@ -274,6 +327,9 @@ export default function Admin() {
                   <h2 className="text-2xl font-bold text-slate-800">用户管理</h2>
                   <p className="text-slate-500 text-sm mt-1">管理系统中的所有用户账户</p>
                 </div>
+                <button onClick={() => openUserModal()} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                  <Plus size={18} /> 新增用户
+                </button>
               </div>
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <table className="w-full">
@@ -316,11 +372,16 @@ export default function Admin() {
                         </td>
                         <td className="px-6 py-4 text-slate-500 text-sm">{new Date(u.created_at).toLocaleDateString('zh-CN')}</td>
                         <td className="px-6 py-4 text-right">
-                          {u.id !== user.id && (
-                            <button onClick={() => handleDeleteUser(u.id)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg">
-                              <Trash2 size={18} />
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => openUserModal(u)} className="text-slate-400 hover:text-indigo-500 p-2 hover:bg-indigo-50 rounded-lg">
+                              <Edit2 size={16} />
                             </button>
-                          )}
+                            {u.id !== user.id && (
+                              <button onClick={() => handleDeleteUser(u.id)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -581,6 +642,73 @@ export default function Admin() {
               </button>
               <button onClick={handleSaveChannel} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
                 {editingChannel ? '保存修改' : '添加渠道'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">{editingUser ? '编辑用户' : '新增用户'}</h3>
+              <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">用户名 *</label>
+                <input
+                  type="text"
+                  value={userForm.username}
+                  onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                  placeholder="请输入用户名"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">邮箱 *</label>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  placeholder="请输入邮箱"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  密码 {editingUser ? '(留空则不修改)' : '*'}
+                </label>
+                <input
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  placeholder={editingUser ? '留空则保持原密码' : '请输入密码（至少6位）'}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">角色</label>
+                <select
+                  value={userForm.role}
+                  onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white"
+                >
+                  <option value="user">普通用户</option>
+                  <option value="admin">管理员</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex gap-3">
+              <button onClick={() => setShowUserModal(false)} className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">
+                取消
+              </button>
+              <button onClick={handleSaveUser} className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
+                {editingUser ? '保存修改' : '创建用户'}
               </button>
             </div>
           </div>
