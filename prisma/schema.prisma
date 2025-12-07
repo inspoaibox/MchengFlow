@@ -53,6 +53,13 @@ model Project {
   name        String?
   title       String?
   description String?
+  status      String   @default("active") // pending, active, completed
+  assignees   String   @default("[]") // JSON array of assignee names
+  startDate   String?  @map("start_date")
+  endDate     String?  @map("end_date")
+  pinned      Int      @default(0) // 1 = pinned, 0 = not pinned
+  color       String?  // background color: red, orange, yellow, green, blue, purple
+  archived    Int      @default(0) // 1 = archived, 0 = not archived
   createdAt   DateTime @default(now()) @map("created_at")
   user        User?    @relation(fields: [userId], references: [id])
   tasks       Task[]
@@ -67,8 +74,10 @@ model Task {
   title        String
   description  String?
   columnStatus String       @default("todo") @map("column_status")
+  startDate    String?      @map("start_date")
   dueDate      String?      @map("due_date")
   priority     String       @default("p2")
+  assignees    String       @default("[]") // JSON array of assignee names
   completedAt  String?      @map("completed_at")
   subtasks     String       @default("[]")
   tags         String       @default("[]")

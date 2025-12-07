@@ -12,14 +12,17 @@ router.get('/', authMiddleware, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
     
+    const today = new Date().toISOString().split('T')[0];
     const parsed = tasks.map(t => ({
       id: t.id,
       projectId: t.projectId,
       title: t.title,
       description: t.description || '',
       column: t.columnStatus || 'todo',
+      startDate: t.startDate || today,
       dueDate: t.dueDate,
       priority: t.priority || 'p2',
+      assignees: JSON.parse(t.assignees || '[]'),
       completedAt: t.completedAt,
       subtasks: JSON.parse(t.subtasks || '[]'),
       tags: JSON.parse(t.tags || '[]'),
@@ -49,8 +52,10 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
       title: t.title,
       description: t.description || '',
       column: t.columnStatus || 'todo',
+      startDate: t.startDate || new Date().toISOString().split('T')[0],
       dueDate: t.dueDate,
       priority: t.priority || 'p2',
+      assignees: JSON.parse(t.assignees || '[]'),
       completedAt: t.completedAt,
       subtasks: JSON.parse(t.subtasks || '[]'),
       tags: JSON.parse(t.tags || '[]'),
@@ -66,8 +71,9 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
 // 创建任务
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { projectId, title, description, column, dueDate, priority, subtasks, tags, chatHistory } = req.body;
+    const { projectId, title, description, column, startDate, dueDate, priority, assignees, subtasks, tags, chatHistory } = req.body;
     
+    const today = new Date().toISOString().split('T')[0];
     const task = await prisma.task.create({
       data: {
         projectId: projectId || null,
@@ -75,8 +81,10 @@ router.post('/', authMiddleware, async (req, res) => {
         title,
         description: description || '',
         columnStatus: column || 'todo',
+        startDate: startDate || today,
         dueDate: dueDate || null,
         priority: priority || 'p2',
+        assignees: JSON.stringify(assignees || []),
         subtasks: JSON.stringify(subtasks || []),
         tags: JSON.stringify(tags || []),
         chatHistory: JSON.stringify(chatHistory || [])
@@ -89,8 +97,10 @@ router.post('/', authMiddleware, async (req, res) => {
       title: task.title,
       description: task.description || '',
       column: task.columnStatus || 'todo',
+      startDate: task.startDate,
       dueDate: task.dueDate,
       priority: task.priority || 'p2',
+      assignees: assignees || [],
       completedAt: null,
       subtasks: subtasks || [],
       tags: tags || [],
@@ -105,7 +115,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // 更新任务
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { projectId, title, description, column, dueDate, priority, completedAt, subtasks, tags, chatHistory } = req.body;
+    const { projectId, title, description, column, startDate, dueDate, priority, assignees, completedAt, subtasks, tags, chatHistory } = req.body;
     
     const task = await prisma.task.findFirst({
       where: { id: parseInt(req.params.id), userId: req.user.id }
@@ -122,8 +132,10 @@ router.put('/:id', authMiddleware, async (req, res) => {
         title,
         description,
         columnStatus: column,
+        startDate,
         dueDate,
         priority,
+        assignees: JSON.stringify(assignees || []),
         completedAt,
         subtasks: JSON.stringify(subtasks || []),
         tags: JSON.stringify(tags || []),

@@ -21,6 +21,12 @@ router.get('/', authMiddleware, async (req, res) => {
       id: p.id,
       title: p.title || p.name || '',
       description: p.description || '',
+      status: p.status || 'active',
+      assignees: JSON.parse(p.assignees || '[]'),
+      startDate: p.startDate,
+      endDate: p.endDate,
+      pinned: p.pinned || 0,
+      color: p.color || null,
       userId: p.userId || p.ownerId,
       createdAt: p.createdAt
     }));
@@ -34,13 +40,18 @@ router.get('/', authMiddleware, async (req, res) => {
 // 创建项目
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, status, assignees, startDate, endDate } = req.body;
+    const today = new Date().toISOString().split('T')[0];
     
     const project = await prisma.project.create({
       data: {
         userId: req.user.id,
         title,
-        description: description || ''
+        description: description || '',
+        status: status || 'active',
+        assignees: JSON.stringify(assignees || []),
+        startDate: startDate || today,
+        endDate: endDate || null
       }
     });
     
@@ -48,7 +59,11 @@ router.post('/', authMiddleware, async (req, res) => {
       id: project.id, 
       userId: project.userId, 
       title: project.title, 
-      description: project.description || '' 
+      description: project.description || '',
+      status: project.status,
+      assignees: assignees || [],
+      startDate: project.startDate,
+      endDate: project.endDate
     });
   } catch (err) {
     console.error('Create project error:', err);
@@ -59,7 +74,9 @@ router.post('/', authMiddleware, async (req, res) => {
 // 更新项目
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, status, assignees, startDate, endDate, pinned, color } = req.body;
+    
+    console.log('Update project request:', { id: req.params.id, status, title, pinned, color });
     
     const project = await prisma.project.findFirst({
       where: { 
@@ -75,12 +92,40 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: '项目不存在' });
     }
     
-    await prisma.project.update({
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+    if (assignees !== undefined) updateData.assignees = JSON.stringify(assignees);
+    if (startDate !== undefined) updateData.startDate = startDate;
+    if (endDate !== undefined) updateData.endDate = endDate;
+    if (pinned !== undefined) updateData.pinned = pinned;
+    if (color !== undefined) updateData.color = color;
+    
+    console.log('Update data:', updateData);
+    
+    const updated = await prisma.project.update({
       where: { id: parseInt(req.params.id) },
-      data: { title, description }
+      data: updateData
     });
     
-    res.json({ message: '更新成功' });
+    console.log('Updated project:', updated);
+    
+    res.json({ 
+      message: '更新成功',
+      project: {
+        id: updated.id,
+        title: updated.title,
+        description: updated.description,
+        status: updated.status,
+        assignees: JSON.parse(updated.assignees || '[]'),
+        startDate: updated.startDate,
+        endDate: updated.endDate,
+        pinned: updated.pinned || 0,
+        color: updated.color || null,
+        createdAt: updated.createdAt
+      }
+    });
   } catch (err) {
     console.error('Update project error:', err);
     res.status(500).json({ error: err.message });

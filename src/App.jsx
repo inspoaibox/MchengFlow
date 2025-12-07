@@ -44,7 +44,12 @@ import {
   Bell,
   BellRing,
   TrendingUp,
-  PieChart
+  PieChart,
+  Users,
+  UserPlus,
+  Edit2,
+  Pin,
+  Palette
 } from 'lucide-react';
 
 /**
@@ -183,27 +188,45 @@ const Modal = ({ isOpen, onClose, children, size = "md" }) => {
 };
 
 // --- Project Card Component ---
-const ProjectCard = ({ project, taskStats, onClick, onDelete }) => {
+const ProjectCard = ({ project, taskStats, onClick, onDelete, onEdit }) => {
     const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
+    const status = project.status || 'active';
+    const statusConfig = {
+      pending: { label: '待开始', color: 'bg-amber-100 text-amber-700', icon: '⏳' },
+      active: { label: '进行中', color: 'bg-blue-100 text-blue-700', icon: '🔄' },
+      completed: { label: '已完成', color: 'bg-emerald-100 text-emerald-700', icon: '✅' }
+    };
+    const statusInfo = statusConfig[status] || statusConfig.active;
     
     return (
         <div 
             onClick={onClick}
-            className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-300 transition-all cursor-pointer group relative flex flex-col h-[200px]"
+            className={`bg-white p-6 rounded-xl shadow-sm border hover:shadow-lg transition-all cursor-pointer group relative flex flex-col h-[220px] ${status === 'completed' ? 'border-emerald-200 opacity-80' : 'border-slate-200 hover:border-indigo-300'}`}
         >
             <div className="flex justify-between items-start mb-3">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                <div className={`p-2 rounded-lg ${status === 'completed' ? 'bg-emerald-50 text-emerald-600' : status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>
                     <Briefcase size={20} />
                 </div>
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
-                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                    <Trash2 size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusInfo.color}`}>
+                        {statusInfo.icon} {statusInfo.label}
+                    </span>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+                        className="text-slate-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                        <Edit2 size={16} />
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
+                        className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
             </div>
             
-            <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-1">{project.title}</h3>
+            <h3 className={`text-lg font-bold mb-2 line-clamp-1 ${status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{project.title}</h3>
             <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1">
                 {project.description || "暂无项目描述"}
             </p>
@@ -215,11 +238,121 @@ const ProjectCard = ({ project, taskStats, onClick, onDelete }) => {
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                     <div 
-                        className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-500"
+                        className={`h-full rounded-full transition-all duration-500 ${status === 'completed' ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-violet-500'}`}
                         style={{ width: `${progress}%` }}
                     />
                 </div>
             </div>
+        </div>
+    );
+};
+
+// --- Project Card Compact Component (for column view) ---
+const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onTogglePin, onChangeColor }) => {
+    const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    
+    const colorOptions = [
+        { value: null, label: '无', bg: 'bg-white' },
+        { value: 'red', label: '红', bg: 'bg-red-100' },
+        { value: 'orange', label: '橙', bg: 'bg-orange-100' },
+        { value: 'yellow', label: '黄', bg: 'bg-yellow-100' },
+        { value: 'green', label: '绿', bg: 'bg-green-100' },
+        { value: 'blue', label: '蓝', bg: 'bg-blue-100' },
+        { value: 'purple', label: '紫', bg: 'bg-purple-100' },
+    ];
+    
+    const bgColorClass = project.color ? `bg-${project.color}-100` : 'bg-white';
+    const borderColorClass = project.color ? `border-${project.color}-200` : 'border-slate-200';
+    
+    return (
+        <div 
+            onClick={onClick}
+            className={`${bgColorClass} p-4 rounded-lg shadow-sm border ${borderColorClass} hover:shadow-md transition-all cursor-pointer group relative`}
+        >
+            {/* Pin indicator */}
+            {project.pinned === 1 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
+                    <Pin size={10} className="text-white" />
+                </div>
+            )}
+            
+            <div className="flex items-start justify-between gap-2 mb-2">
+                <h4 className="font-semibold text-slate-800 line-clamp-1 flex-1">{project.title}</h4>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onTogglePin(project); }}
+                        className={`p-1 rounded hover:bg-slate-100 ${project.pinned ? 'text-amber-500' : 'text-slate-400'}`}
+                        title={project.pinned ? '取消置顶' : '置顶'}
+                    >
+                        <Pin size={14} />
+                    </button>
+                    <div className="relative">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400"
+                            title="设置颜色"
+                        >
+                            <Palette size={14} />
+                        </button>
+                        {showColorPicker && (
+                            <div className="absolute right-0 top-6 bg-white rounded-lg shadow-lg border border-slate-200 p-2 z-10 flex gap-1" onClick={e => e.stopPropagation()}>
+                                {colorOptions.map(c => (
+                                    <button
+                                        key={c.value || 'none'}
+                                        onClick={() => { onChangeColor(project, c.value); setShowColorPicker(false); }}
+                                        className={`w-6 h-6 rounded-full ${c.bg} border-2 ${project.color === c.value ? 'border-indigo-500' : 'border-slate-200'} hover:scale-110 transition-transform`}
+                                        title={c.label}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-500"
+                    >
+                        <Edit2 size={14} />
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-red-500"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            </div>
+            
+            <p className="text-slate-500 text-xs line-clamp-2 mb-3">
+                {project.description || "暂无描述"}
+            </p>
+            
+            {/* Progress bar */}
+            <div className="flex items-center gap-2">
+                <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium">{taskStats.done}/{taskStats.total}</span>
+            </div>
+            
+            {/* Assignees */}
+            {project.assignees?.length > 0 && (
+                <div className="flex -space-x-1 mt-2">
+                    {project.assignees.slice(0, 3).map((name, idx) => (
+                        <span key={idx} className="w-5 h-5 bg-violet-100 text-violet-700 rounded-full flex items-center justify-center text-[9px] font-bold border border-white" title={name}>
+                            {name.charAt(0).toUpperCase()}
+                        </span>
+                    ))}
+                    {project.assignees.length > 3 && (
+                        <span className="w-5 h-5 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-[9px] font-bold border border-white">
+                            +{project.assignees.length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -278,6 +411,20 @@ const TaskCard = ({ task, onMove, onDelete, onClick, onDragStart, minimalist = f
             {tag}
           </span>
         ))}
+        {task.assignees?.length > 0 && (
+          <div className="flex -space-x-1">
+            {task.assignees.slice(0, 3).map((name, idx) => (
+              <span key={idx} className="w-5 h-5 bg-violet-100 text-violet-700 rounded-full flex items-center justify-center text-[9px] font-bold border border-white" title={name}>
+                {name.charAt(0).toUpperCase()}
+              </span>
+            ))}
+            {task.assignees.length > 3 && (
+              <span className="w-5 h-5 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-[9px] font-bold border border-white">
+                +{task.assignees.length - 3}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between text-slate-400 text-xs mt-auto pt-2 border-t border-slate-50">
@@ -366,6 +513,10 @@ export default function App() {
   const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
   const [dailyReport, setDailyReport] = useState('');
   
+  // Project edit modal state
+  const [isProjectEditModalOpen, setIsProjectEditModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  
   // Daily view filter: 'all' | 'project' | 'standalone'
   const [dailyFilter, setDailyFilter] = useState('all');
   const [quickTaskInput, setQuickTaskInput] = useState('');
@@ -383,6 +534,9 @@ export default function App() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Project filter state
+  const [projectFilter, setProjectFilter] = useState('all'); // all, pending, active, completed
   
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
@@ -454,7 +608,11 @@ export default function App() {
   }, [dataLoaded, tasks]);
 
   const [activeTask, setActiveTask] = useState(null);
-  const [activeTab, setActiveTab] = useState('details'); 
+  const [activeTab, setActiveTab] = useState('details');
+  
+  // Inline input states for assignees and tags
+  const [newAssignee, setNewAssignee] = useState('');
+  const [newTag, setNewTag] = useState(''); 
   
   // New Project State
   const [newProjectTitle, setNewProjectTitle] = useState("");
@@ -565,12 +723,14 @@ export default function App() {
   };
 
   const addTask = async (columnId) => {
+    const today = new Date().toISOString().split('T')[0];
     const newTask = {
       projectId: activeProjectId,
       title: "新任务",
       description: "",
       column: columnId,
-      dueDate: new Date().toISOString().split('T')[0],
+      startDate: today,
+      dueDate: today,
       priority: 'p2',
       completedAt: null,
       subtasks: [],
@@ -589,11 +749,13 @@ export default function App() {
 
   // 添加独立任务（不属于任何项目）
   const addStandaloneTask = async (priority = 'p2') => {
+    const today = new Date().toISOString().split('T')[0];
     const newTask = {
       projectId: null,
       title: "新任务",
       description: "",
       column: 'todo',
+      startDate: today,
       dueDate: viewDate.toISOString().split('T')[0],
       priority: priority,
       completedAt: null,
@@ -630,6 +792,25 @@ export default function App() {
       } catch (err) {
         console.error('Failed to delete project', err);
       }
+    }
+  };
+
+  const handleToggleProjectPin = async (project) => {
+    const newPinned = project.pinned === 1 ? 0 : 1;
+    try {
+      await api.put(`/projects/${project.id}`, { ...project, pinned: newPinned });
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, pinned: newPinned } : p));
+    } catch (err) {
+      console.error('Failed to toggle pin', err);
+    }
+  };
+
+  const handleChangeProjectColor = async (project, color) => {
+    try {
+      await api.put(`/projects/${project.id}`, { ...project, color });
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, color } : p));
+    } catch (err) {
+      console.error('Failed to change color', err);
     }
   };
 
@@ -832,12 +1013,14 @@ export default function App() {
     e.preventDefault();
     if (!quickTaskInput.trim()) return;
     
+    const today = new Date().toISOString().split('T')[0];
     try {
       const res = await api.post('/tasks', {
         projectId: null,
         title: quickTaskInput.trim(),
         description: '',
         column: 'todo',
+        startDate: today,
         dueDate: viewDate.toISOString().split('T')[0],
         priority: 'p2',
         subtasks: [],
@@ -1266,29 +1449,111 @@ export default function App() {
       {/* MAIN CONTENT AREA */}
       <main className="p-6 h-[calc(100vh-73px)] overflow-hidden bg-slate-50/50">
         
-        {/* VIEW: PROJECT LIST */}
+        {/* VIEW: PROJECT LIST - Three Column Layout */}
         {currentView === 'projects' && (
-            <div className="max-w-7xl mx-auto h-full overflow-y-auto pb-20">
-                <div className="flex items-center justify-between mb-8">
+            <div className="max-w-full mx-auto h-full overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-4 px-2">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800">所有项目</h2>
-                        <p className="text-slate-500 text-sm mt-1">管理您的工作流与目标</p>
+                        <h2 className="text-2xl font-bold text-slate-800">项目看板</h2>
+                        <p className="text-slate-500 text-sm mt-1">共 {projects.length} 个项目</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {projects.map(project => (
-                        <ProjectCard 
-                            key={project.id} 
-                            project={project}
-                            taskStats={getProjectStats(project.id)}
-                            onClick={() => {
-                                setActiveProjectId(project.id);
-                                setCurrentView('board');
-                            }}
-                            onDelete={deleteProject}
-                        />
-                    ))}
+                <div className="flex-1 overflow-x-auto">
+                    <div className="grid grid-cols-3 gap-4 h-full min-w-[900px] px-2">
+                        {/* Pending Column */}
+                        <div className="bg-amber-50/50 rounded-xl border border-amber-200 flex flex-col overflow-hidden">
+                            <div className="p-4 border-b border-amber-200 bg-amber-100/50">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-amber-800 flex items-center gap-2">
+                                        <span className="text-lg">⏳</span> 待开始
+                                    </h3>
+                                    <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+                                        {projects.filter(p => p.status === 'pending').length}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                                {projects
+                                    .filter(p => p.status === 'pending')
+                                    .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
+                                    .map(project => (
+                                        <ProjectCardCompact 
+                                            key={project.id} 
+                                            project={project}
+                                            taskStats={getProjectStats(project.id)}
+                                            onClick={() => { setActiveProjectId(project.id); setCurrentView('board'); }}
+                                            onDelete={deleteProject}
+                                            onEdit={(p) => { setEditingProject({...p}); setIsProjectEditModalOpen(true); }}
+                                            onTogglePin={handleToggleProjectPin}
+                                            onChangeColor={handleChangeProjectColor}
+                                        />
+                                    ))}
+                            </div>
+                        </div>
+
+                        {/* Active Column */}
+                        <div className="bg-blue-50/50 rounded-xl border border-blue-200 flex flex-col overflow-hidden">
+                            <div className="p-4 border-b border-blue-200 bg-blue-100/50">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-blue-800 flex items-center gap-2">
+                                        <span className="text-lg">🔄</span> 进行中
+                                    </h3>
+                                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                                        {projects.filter(p => p.status === 'active' || !p.status).length}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                                {projects
+                                    .filter(p => p.status === 'active' || !p.status)
+                                    .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
+                                    .map(project => (
+                                        <ProjectCardCompact 
+                                            key={project.id} 
+                                            project={project}
+                                            taskStats={getProjectStats(project.id)}
+                                            onClick={() => { setActiveProjectId(project.id); setCurrentView('board'); }}
+                                            onDelete={deleteProject}
+                                            onEdit={(p) => { setEditingProject({...p}); setIsProjectEditModalOpen(true); }}
+                                            onTogglePin={handleToggleProjectPin}
+                                            onChangeColor={handleChangeProjectColor}
+                                        />
+                                    ))}
+                            </div>
+                        </div>
+
+                        {/* Completed Column */}
+                        <div className="bg-emerald-50/50 rounded-xl border border-emerald-200 flex flex-col overflow-hidden">
+                            <div className="p-4 border-b border-emerald-200 bg-emerald-100/50">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-emerald-800 flex items-center gap-2">
+                                        <span className="text-lg">✅</span> 已完成
+                                    </h3>
+                                    <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-medium">
+                                        {projects.filter(p => p.status === 'completed').length}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                                {projects
+                                    .filter(p => p.status === 'completed')
+                                    .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
+                                    .map(project => (
+                                        <ProjectCardCompact 
+                                            key={project.id} 
+                                            project={project}
+                                            taskStats={getProjectStats(project.id)}
+                                            onClick={() => { setActiveProjectId(project.id); setCurrentView('board'); }}
+                                            onDelete={deleteProject}
+                                            onEdit={(p) => { setEditingProject({...p}); setIsProjectEditModalOpen(true); }}
+                                            onTogglePin={handleToggleProjectPin}
+                                            onChangeColor={handleChangeProjectColor}
+                                        />
+                                    ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         )}
@@ -1477,19 +1742,44 @@ export default function App() {
         {currentView === 'board' && activeProject && (
             <div className="h-full flex flex-col">
                 {/* Project Header */}
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-200">
-                    <button 
-                        onClick={() => setCurrentView('projects')}
-                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">{activeProject.title}</h2>
-                        {activeProject.description && (
-                            <p className="text-sm text-slate-500 mt-0.5">{activeProject.description}</p>
-                        )}
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setCurrentView('projects')}
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">{activeProject.title}</h2>
+                            {activeProject.description && (
+                                <p className="text-sm text-slate-500 mt-0.5">{activeProject.description}</p>
+                            )}
+                        </div>
                     </div>
+                    
+                    {/* Project Status Selector */}
+                    <select
+                        value={activeProject.status || 'active'}
+                        onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            try {
+                                await api.put(`/projects/${activeProject.id}`, { ...activeProject, status: newStatus });
+                                setProjects(prev => prev.map(p => p.id === activeProject.id ? { ...p, status: newStatus } : p));
+                            } catch (err) {
+                                console.error('Failed to update project status', err);
+                            }
+                        }}
+                        className={`text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                            activeProject.status === 'completed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                            activeProject.status === 'pending' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            'bg-blue-50 border-blue-200 text-blue-700'
+                        }`}
+                    >
+                        <option value="pending">⏳ 待开始</option>
+                        <option value="active">🔄 进行中</option>
+                        <option value="completed">✅ 已完成</option>
+                    </select>
                 </div>
                 
                 {/* Kanban Columns */}
@@ -1600,6 +1890,17 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <Calendar size={14} /> 开始日期
+                      </label>
+                      <input 
+                        type="date" 
+                        value={activeTask.startDate || ""} 
+                        onChange={(e) => updateActiveTask({ startDate: e.target.value })}
+                        className="w-full text-sm text-slate-700 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all"
+                      />
+                    </div>
+                    <div>
+                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                         <Clock size={14} /> 截止日期
                       </label>
                       <input 
@@ -1609,6 +1910,9 @@ export default function App() {
                         className="w-full text-sm text-slate-700 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all"
                       />
                     </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                         <CheckSquare size={14} /> 状态
@@ -1633,10 +1937,7 @@ export default function App() {
                           <option value="done">✅ 已完成</option>
                       </select>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
+                    <div>
                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                         <AlertCircle size={14} /> 优先级 (四象限)
                       </label>
@@ -1651,20 +1952,57 @@ export default function App() {
                           <option value="p4">⚪ 不重要不紧急</option>
                       </select>
                     </div>
-                    <div>
-                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <Briefcase size={14} /> 所属项目
-                      </label>
-                      <select 
-                        value={activeTask.projectId || ""} 
-                        onChange={(e) => updateActiveTask({ projectId: e.target.value ? parseInt(e.target.value) : null })}
-                        className="w-full text-sm text-slate-700 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all bg-white"
-                      >
-                          <option value="">无项目（独立任务）</option>
-                          {projects.map(p => (
-                            <option key={p.id} value={p.id}>{p.title}</option>
-                          ))}
-                      </select>
+                  </div>
+                  
+                  <div>
+                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <Briefcase size={14} /> 所属项目
+                    </label>
+                    <select 
+                      value={activeTask.projectId || ""} 
+                      onChange={(e) => updateActiveTask({ projectId: e.target.value ? parseInt(e.target.value) : null })}
+                      className="w-full text-sm text-slate-700 border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all bg-white"
+                    >
+                        <option value="">无项目（独立任务）</option>
+                        {projects.map(p => (
+                          <option key={p.id} value={p.id}>{p.title}</option>
+                        ))}
+                    </select>
+                  </div>
+                  
+                  {/* Assignees */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+                      <Users size={14} /> 负责人
+                    </label>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {(activeTask.assignees || []).map((name, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">
+                          <span className="w-5 h-5 bg-indigo-200 rounded-full flex items-center justify-center text-[10px] font-bold">
+                            {name.charAt(0).toUpperCase()}
+                          </span>
+                          {name}
+                          <button 
+                            onClick={() => updateActiveTask({ assignees: activeTask.assignees.filter((_, i) => i !== idx) })}
+                            className="hover:text-red-500 ml-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                      <input
+                        type="text"
+                        value={newAssignee}
+                        onChange={(e) => setNewAssignee(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newAssignee.trim()) {
+                            updateActiveTask({ assignees: [...(activeTask.assignees || []), newAssignee.trim()] });
+                            setNewAssignee('');
+                          }
+                        }}
+                        placeholder="输入姓名后回车"
+                        className="text-xs px-2 py-1 border border-dashed border-slate-300 rounded-full focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 w-28"
+                      />
                     </div>
                   </div>
 
@@ -1731,15 +2069,19 @@ export default function App() {
                           </button>
                         </span>
                       ))}
-                      <button 
-                        onClick={() => {
-                          const tag = prompt("输入标签名称:");
-                          if (tag) updateActiveTask({ tags: [...activeTask.tags, tag] });
+                      <input
+                        type="text"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newTag.trim()) {
+                            updateActiveTask({ tags: [...activeTask.tags, newTag.trim()] });
+                            setNewTag('');
+                          }
                         }}
-                        className="text-xs px-2 py-1 border border-dashed border-slate-300 text-slate-500 rounded-md hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-                      >
-                        + 添加标签
-                      </button>
+                        placeholder="输入标签后回车"
+                        className="text-xs px-2 py-1 border border-dashed border-slate-300 text-slate-500 rounded-md focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 w-28"
+                      />
                     </div>
                   </div>
                   
@@ -1921,6 +2263,175 @@ export default function App() {
                   </div>
               </div>
           </div>
+      </Modal>
+
+      {/* Project Edit Modal */}
+      <Modal isOpen={isProjectEditModalOpen} onClose={() => setIsProjectEditModalOpen(false)}>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-slate-800">编辑项目</h2>
+            <button onClick={() => setIsProjectEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <X size={24} />
+            </button>
+          </div>
+
+          {editingProject && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">项目名称</label>
+                <input 
+                  type="text" 
+                  value={editingProject.title || ''}
+                  onChange={(e) => setEditingProject({...editingProject, title: e.target.value})}
+                  placeholder="项目名称"
+                  className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">项目描述</label>
+                <textarea 
+                  value={editingProject.description || ''}
+                  onChange={(e) => setEditingProject({...editingProject, description: e.target.value})}
+                  placeholder="项目描述..."
+                  className="w-full border border-slate-300 rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">状态</label>
+                  <select
+                    value={editingProject.status || 'active'}
+                    onChange={(e) => setEditingProject({...editingProject, status: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+                  >
+                    <option value="pending">待开始</option>
+                    <option value="active">进行中</option>
+                    <option value="completed">已完成</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">开始日期</label>
+                  <input 
+                    type="date" 
+                    value={editingProject.startDate || ''}
+                    onChange={(e) => setEditingProject({...editingProject, startDate: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">结束日期</label>
+                  <input 
+                    type="date" 
+                    value={editingProject.endDate || ''}
+                    onChange={(e) => setEditingProject({...editingProject, endDate: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              
+              {/* Project Assignees */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">负责人</label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {(editingProject.assignees || []).map((name, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full">
+                      <span className="w-5 h-5 bg-indigo-200 rounded-full flex items-center justify-center text-[10px] font-bold">
+                        {name.charAt(0).toUpperCase()}
+                      </span>
+                      {name}
+                      <button 
+                        onClick={() => setEditingProject({...editingProject, assignees: editingProject.assignees.filter((_, i) => i !== idx)})}
+                        className="hover:text-red-500 ml-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="输入姓名后回车"
+                    className="text-xs px-2 py-1 border border-dashed border-slate-300 rounded-full focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 w-28"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        setEditingProject({...editingProject, assignees: [...(editingProject.assignees || []), e.target.value.trim()]});
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Pin and Color */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">置顶</label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingProject.pinned === 1}
+                      onChange={(e) => setEditingProject({...editingProject, pinned: e.target.checked ? 1 : 0})}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-slate-600">置顶此项目</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">标记颜色</label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: null, bg: 'bg-white border-2 border-slate-300' },
+                      { value: 'red', bg: 'bg-red-200' },
+                      { value: 'orange', bg: 'bg-orange-200' },
+                      { value: 'yellow', bg: 'bg-yellow-200' },
+                      { value: 'green', bg: 'bg-green-200' },
+                      { value: 'blue', bg: 'bg-blue-200' },
+                      { value: 'purple', bg: 'bg-purple-200' },
+                    ].map(c => (
+                      <button
+                        key={c.value || 'none'}
+                        onClick={() => setEditingProject({...editingProject, color: c.value})}
+                        className={`w-6 h-6 rounded-full ${c.bg} ${editingProject.color === c.value ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} hover:scale-110 transition-transform`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  onClick={async () => {
+                    try {
+                      console.log('Saving project:', editingProject);
+                      const res = await api.put(`/projects/${editingProject.id}`, editingProject);
+                      console.log('Save response:', res.data);
+                      // Use the returned project data if available, otherwise use local state
+                      const updatedProject = res.data.project || editingProject;
+                      setProjects(prev => prev.map(p => p.id === editingProject.id ? {...editingProject, ...updatedProject} : p));
+                      setIsProjectEditModalOpen(false);
+                      setEditingProject(null);
+                    } catch (err) {
+                      console.error('Failed to update project', err);
+                      alert('更新失败');
+                    }
+                  }}
+                  disabled={!editingProject.title?.trim()}
+                  className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  保存修改
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsProjectEditModalOpen(false);
+                    setEditingProject(null);
+                  }}
+                  className="px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* Daily Report Modal */}
