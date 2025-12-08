@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM node:18-alpine AS builder
 
 # 设置 UTF-8 编码
@@ -13,9 +12,8 @@ WORKDIR /app
 # 先复制依赖文件（利用缓存）
 COPY package*.json ./
 
-# 使用缓存挂载加速 npm 安装
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+# 安装依赖
+RUN npm ci
 
 # 复制 Prisma schema 并生成 Client
 COPY prisma ./prisma/
@@ -45,9 +43,8 @@ WORKDIR /app
 # 复制 package.json
 COPY package*.json ./
 
-# 使用缓存挂载加速 npm 安装
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+# 安装生产依赖
+RUN npm ci --omit=dev
 
 # 复制 Prisma schema 并生成 Client
 COPY prisma ./prisma/
