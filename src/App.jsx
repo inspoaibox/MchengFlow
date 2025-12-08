@@ -250,7 +250,7 @@ const ProjectCard = ({ project, taskStats, onClick, onDelete, onEdit }) => {
 };
 
 // --- Project Card Compact Component (for column view) ---
-const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onTogglePin, onChangeColor, onArchive, showArchiveButton = false }) => {
+const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onTogglePin, onChangeColor, onArchive, showArchiveButton = false, onDragStart }) => {
     const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
     const [showColorPicker, setShowColorPicker] = useState(false);
     
@@ -267,10 +267,17 @@ const ProjectCardCompact = ({ project, taskStats, onClick, onDelete, onEdit, onT
     const bgColorClass = project.color ? `bg-${project.color}-100` : 'bg-white';
     const borderColorClass = project.color ? `border-${project.color}-200` : 'border-slate-200';
     
+    const handleProjectDrag = (e) => {
+        e.dataTransfer.setData("application/project-id", project.id.toString());
+        e.dataTransfer.effectAllowed = "move";
+    };
+    
     return (
         <div 
             onClick={onClick}
-            className={`${bgColorClass} p-4 rounded-lg shadow-sm border ${borderColorClass} hover:shadow-md transition-all cursor-pointer group relative`}
+            draggable="true"
+            onDragStart={handleProjectDrag}
+            className={`${bgColorClass} p-4 rounded-lg shadow-sm border ${borderColorClass} hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative select-none`}
         >
             {/* Pin indicator */}
             {project.pinned === 1 && (
@@ -373,13 +380,18 @@ const TaskCard = ({ task, onMove, onDelete, onClick, onDragStart, minimalist = f
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date().setHours(0,0,0,0) && task.column !== 'done';
   const isDueToday = task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString();
 
+  const handleDrag = (e) => {
+    e.dataTransfer.setData("text/plain", task.id.toString());
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   if (minimalist) {
       return (
         <div 
             onClick={onClick}
             draggable="true"
-            onDragStart={(e) => { e.stopPropagation(); onDragStart(e, task.id); }}
-            className="bg-white p-3 rounded shadow-sm border border-slate-200 hover:shadow-md cursor-grab active:cursor-grabbing text-sm group"
+            onDragStart={handleDrag}
+            className="bg-white p-3 rounded shadow-sm border border-slate-200 hover:shadow-md cursor-grab active:cursor-grabbing text-sm group select-none"
         >
             <div className="flex justify-between gap-2">
                 <span className={`font-medium line-clamp-2 ${task.column === 'done' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
@@ -399,8 +411,8 @@ const TaskCard = ({ task, onMove, onDelete, onClick, onDragStart, minimalist = f
     <div 
       onClick={onClick}
       draggable="true"
-      onDragStart={(e) => { e.stopPropagation(); onDragStart(e, task.id); }}
-      className={`group bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-grab active:cursor-grabbing relative ${isOverdue ? 'border-red-200' : 'border-slate-200 hover:border-indigo-300'}`}
+      onDragStart={handleDrag}
+      className={`group bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-grab active:cursor-grabbing relative select-none ${isOverdue ? 'border-red-200' : 'border-slate-200 hover:border-indigo-300'}`}
     >
       <div className="flex justify-between items-start mb-2">
         <h3 className={`font-semibold text-slate-800 line-clamp-2 pr-6 ${task.column === 'done' ? 'line-through opacity-60' : ''}`}>{task.title}</h3>
@@ -696,7 +708,6 @@ export default function App() {
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
   };
 
@@ -731,6 +742,29 @@ export default function App() {
           await api.put(`/tasks/${taskId}`, updated);
         } catch (err) {
           console.error('Failed to update task', err);
+        }
+      }
+    }
+  };
+
+  // Project Drag and Drop
+  const handleProjectDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDropProjectColumn = async (e, newStatus) => {
+    e.preventDefault();
+    const projectId = parseInt(e.dataTransfer.getData("application/project-id"));
+    if (projectId) {
+      const project = projects.find(p => p.id === projectId);
+      if (project && project.status !== newStatus) {
+        const updated = { ...project, status: newStatus };
+        setProjects(prev => prev.map(p => p.id === projectId ? updated : p));
+        try {
+          await api.put(`/projects/${projectId}`, updated);
+        } catch (err) {
+          console.error('Failed to update project status', err);
         }
       }
     }
@@ -940,6 +974,34 @@ export default function App() {
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
   };
 
+  // Calendar Drag and Drop
+  const handleCalendarDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDropCalendarDate = async (e, dateStr) => {
+    e.preventDefault();
+    const taskId = parseInt(e.dataTransfer.getData("text/plain"));
+    if (taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.dueDate !== dateStr) {
+        const updated = { ...task, dueDate: dateStr };
+        setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+        try {
+          await api.put(`/tasks/${taskId}`, updated);
+        } catch (err) {
+          console.error('Failed to update task date', err);
+        }
+      }
+    }
+  };
+
+  const handleCalendarTaskDrag = (e, taskId) => {
+    e.dataTransfer.setData("text/plain", taskId.toString());
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   const renderCalendarGrid = () => {
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
@@ -958,7 +1020,12 @@ export default function App() {
         const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
 
         days.push(
-            <div key={day} className={`bg-white border border-slate-200 min-h-[120px] p-2 hover:bg-slate-50 transition-colors relative group ${isToday ? 'bg-indigo-50/30' : ''}`}>
+            <div 
+                key={day} 
+                className={`bg-white border border-slate-200 min-h-[120px] p-2 hover:bg-slate-50 transition-colors relative group ${isToday ? 'bg-indigo-50/30' : ''}`}
+                onDragOver={handleCalendarDragOver}
+                onDrop={(e) => handleDropCalendarDate(e, dateStr)}
+            >
                 <div className={`text-xs font-semibold mb-2 flex justify-between ${isToday ? 'text-indigo-600' : 'text-slate-500'}`}>
                     <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : ''}`}>
                         {day}
@@ -970,10 +1037,12 @@ export default function App() {
                         const isDone = task.column === 'done';
                         const isOverdue = !isDone && new Date(task.dueDate) < new Date().setHours(0,0,0,0);
                         return (
-                            <button 
+                            <div 
                                 key={task.id}
+                                draggable="true"
+                                onDragStart={(e) => handleCalendarTaskDrag(e, task.id)}
                                 onClick={() => openTask(task)}
-                                className={`w-full text-left text-[11px] px-2 py-1.5 rounded border truncate transition-all flex items-center gap-1.5
+                                className={`w-full text-left text-[11px] px-2 py-1.5 rounded border truncate transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing select-none
                                     ${isDone 
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100 line-through opacity-70' 
                                         : isOverdue
@@ -982,9 +1051,9 @@ export default function App() {
                                     }
                                 `}
                             >
-                                <div className={`w-1.5 h-1.5 rounded-full ${isDone ? 'bg-emerald-400' : isOverdue ? 'bg-red-400' : 'bg-slate-300'}`}></div>
-                                {task.title}
-                            </button>
+                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone ? 'bg-emerald-400' : isOverdue ? 'bg-red-400' : 'bg-slate-300'}`}></div>
+                                <span className="truncate">{task.title}</span>
+                            </div>
                         );
                     })}
                 </div>
@@ -1512,7 +1581,11 @@ export default function App() {
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                            <div 
+                                className="flex-1 overflow-y-auto p-3 space-y-3"
+                                onDragOver={handleProjectDragOver}
+                                onDrop={(e) => handleDropProjectColumn(e, 'pending')}
+                            >
                                 {projects
                                     .filter(p => p.status === 'pending' && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
@@ -1543,7 +1616,11 @@ export default function App() {
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                            <div 
+                                className="flex-1 overflow-y-auto p-3 space-y-3"
+                                onDragOver={handleProjectDragOver}
+                                onDrop={(e) => handleDropProjectColumn(e, 'active')}
+                            >
                                 {projects
                                     .filter(p => (p.status === 'active' || !p.status) && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
@@ -1574,7 +1651,11 @@ export default function App() {
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                            <div 
+                                className="flex-1 overflow-y-auto p-3 space-y-3"
+                                onDragOver={handleProjectDragOver}
+                                onDrop={(e) => handleDropProjectColumn(e, 'completed')}
+                            >
                                 {projects
                                     .filter(p => p.status === 'completed' && !p.archived)
                                     .sort((a, b) => (b.pinned || 0) - (a.pinned || 0) || new Date(b.createdAt) - new Date(a.createdAt))
@@ -1842,8 +1923,6 @@ export default function App() {
                   {columns.map(col => (
                     <div 
                       key={col.id} 
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDropColumn(e, col.id)}
                       className="flex-1 min-w-[280px] flex flex-col h-full"
                     >
                       <div className={`flex items-center justify-between p-3 rounded-t-lg border-b-2 border-slate-200 ${col.color} bg-opacity-50`}>
@@ -1862,7 +1941,11 @@ export default function App() {
                         </button>
                       </div>
 
-                      <div className="flex-1 bg-slate-100/50 rounded-b-lg p-3 overflow-y-auto space-y-3 transition-colors hover:bg-slate-100/80">
+                      <div 
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDropColumn(e, col.id)}
+                        className="flex-1 bg-slate-100/50 rounded-b-lg p-3 overflow-y-auto space-y-3 transition-colors hover:bg-slate-100/80"
+                      >
                         {projectTasks.filter(t => t.column === col.id).map(task => (
                           <TaskCard 
                             key={task.id} 
@@ -1894,9 +1977,23 @@ export default function App() {
                 className="text-xl font-bold bg-transparent border-none focus:ring-0 p-0 w-full text-slate-800 placeholder-slate-400"
                 placeholder="任务标题"
               />
-              <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-slate-600 ml-4">
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-2 ml-4">
+                <button 
+                  onClick={() => {
+                    if (confirm('确定要删除这个任务吗？')) {
+                      deleteTask(activeTask.id);
+                      setIsTaskModalOpen(false);
+                    }
+                  }}
+                  className="text-slate-400 hover:text-red-500 p-1"
+                  title="删除任务"
+                >
+                  <Trash2 size={20} />
+                </button>
+                <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
             <div className="px-6 border-b border-slate-100 flex gap-6 text-sm font-medium">

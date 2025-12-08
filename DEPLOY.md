@@ -23,20 +23,28 @@
 npm install
 ```
 
-### 2. 初始化数据库
+### 2. 配置环境变量
+
+创建 `.env` 文件（可选，使用默认值可跳过）：
+
+```bash
+DATABASE_URL="file:../server/db/app.db"
+```
+
+### 3. 初始化数据库
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-### 3. 构建前端
+### 4. 构建前端
 
 ```bash
 npm run build
 ```
 
-### 4. 启动生产服务器
+### 5. 启动生产服务器
 
 ```bash
 # Windows
@@ -172,6 +180,7 @@ server {
 | `PORT` | 服务端口 | 3101 |
 | `NODE_ENV` | 环境模式 | development |
 | `JWT_SECRET` | JWT密钥 | 内置默认值 |
+| `DATABASE_URL` | 数据库路径 | file:../server/db/app.db |
 
 ---
 
