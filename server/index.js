@@ -15,9 +15,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3101;
 
+console.log('=== SERVER STARTING ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+console.log('PORT:', PORT);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// 请求日志中间件
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);

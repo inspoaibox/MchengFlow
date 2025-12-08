@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'geminiflow',
+      name: 'mchengflow',
       script: 'server/index.js',
       instances: 1,
       autorestart: true,

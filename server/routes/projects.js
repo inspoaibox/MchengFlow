@@ -40,6 +40,9 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // 创建项目
 router.post('/', authMiddleware, async (req, res) => {
+  console.log('=== CREATE PROJECT REQUEST ===');
+  console.log('User:', req.user);
+  console.log('Body:', req.body);
   try {
     const { title, description, status, assignees, startDate, endDate } = req.body;
     const today = new Date().toISOString().split('T')[0];
@@ -56,6 +59,7 @@ router.post('/', authMiddleware, async (req, res) => {
       }
     });
     
+    console.log('Created project:', project);
     res.json({ 
       id: project.id, 
       userId: project.userId, 
@@ -68,6 +72,7 @@ router.post('/', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error('Create project error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ error: err.message });
   }
 });

@@ -154,3 +154,56 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  /* Header adjustments */
+  header {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Main content padding */
+  main {
+    padding: 1rem !important;
+  }
+  
+  /* Modal full screen on mobile */
+  .modal-mobile-full {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide text on small screens */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* Stack columns on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+  
+  /* Full width on mobile */
+  .mobile-full {
+    width: 100% !important;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  /* Even smaller padding */
+  header {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  main {
+    padding: 0.75rem !important;
+  }
+}

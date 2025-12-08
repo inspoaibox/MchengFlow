@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:../server/db/app.db"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -14,8 +14,6 @@ model User {
   email     String    @unique
   role      String    @default("user")
   createdAt DateTime  @default(now()) @map("created_at")
-  projects  Project[]
-  tasks     Task[]
 
   @@map("users")
 }
@@ -61,8 +59,6 @@ model Project {
   color       String?  // background color: red, orange, yellow, green, blue, purple
   archived    Int      @default(0) // 1 = archived, 0 = not archived
   createdAt   DateTime @default(now()) @map("created_at")
-  user        User?    @relation(fields: [userId], references: [id])
-  tasks       Task[]
 
   @@map("projects")
 }
@@ -83,23 +79,19 @@ model Task {
   tags         String       @default("[]")
   chatHistory  String       @default("[]") @map("chat_history")
   createdAt    DateTime     @default(now()) @map("created_at")
-  project      Project?     @relation(fields: [projectId], references: [id])
-  user         User?        @relation(fields: [userId], references: [id])
-  attachments  Attachment[]
 
   @@map("tasks")
 }
 
 model Attachment {
-  id        Int      @id @default(autoincrement())
-  taskId    Int      @map("task_id")
-  userId    Int      @map("user_id")
-  filename  String
-  originalName String @map("original_name")
-  mimeType  String   @map("mime_type")
-  size      Int
-  createdAt DateTime @default(now()) @map("created_at")
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  taskId       Int      @map("task_id")
+  userId       Int      @map("user_id")
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("attachments")
 }

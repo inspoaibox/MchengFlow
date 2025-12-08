@@ -181,8 +181,8 @@ const Modal = ({ isOpen, onClose, children, size = "md" }) => {
   if (!isOpen) return null;
   const maxWidth = size === "lg" ? "max-w-4xl" : "max-w-2xl";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className={`bg-white rounded-xl shadow-2xl w-full ${maxWidth} max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`bg-white shadow-2xl w-full ${maxWidth} overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 h-full sm:h-auto sm:max-h-[90vh] sm:rounded-xl`}>
         {children}
       </div>
     </div>
@@ -1343,54 +1343,53 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
       
       {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm h-[73px]">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-200">
-              <Sparkles size={18} />
+      <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm h-auto sm:h-[73px]">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-200">
+              <Sparkles size={16} />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hidden sm:block">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hidden sm:block">
               {siteName}
             </h1>
           </div>
 
-          <div className="flex items-center text-sm font-medium pl-6 border-l border-slate-200 ml-2 gap-2 md:gap-4 overflow-x-auto no-scrollbar">
+          <div className="flex items-center text-sm font-medium pl-2 sm:pl-6 border-l border-slate-200 ml-1 sm:ml-2 gap-1 sm:gap-4 overflow-x-auto no-scrollbar flex-1">
             <button 
                 onClick={() => setCurrentView('projects')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${currentView === 'projects' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md transition-all whitespace-nowrap text-xs sm:text-sm ${currentView === 'projects' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
             >
-                <LayoutGrid size={16} /> 项目大厅
+                <LayoutGrid size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">项目大厅</span>
             </button>
             <button 
                 onClick={() => setCurrentView('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${currentView === 'calendar' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md transition-all whitespace-nowrap text-xs sm:text-sm ${currentView === 'calendar' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
             >
-                <Calendar size={16} /> 日历视图
+                <Calendar size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">日历视图</span>
             </button>
             <button 
                 onClick={() => setCurrentView('daily')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${currentView === 'daily' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md transition-all whitespace-nowrap text-xs sm:text-sm ${currentView === 'daily' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
             >
-                <ClipboardList size={16} /> 每日记录
+                <ClipboardList size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">每日记录</span>
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Search Button */}
             <button 
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all text-sm"
+                className="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
                 title="搜索 (Ctrl+K)"
             >
                 <Search size={18} />
-                <span className="hidden md:inline text-xs text-slate-400">Ctrl+K</span>
             </button>
             
-            {/* Stats Button */}
+            {/* Stats Button - hidden on very small screens */}
             <button 
                 onClick={() => setIsStatsModalOpen(true)}
-                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                className="hidden sm:block p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
                 title="统计数据"
             >
                 <BarChart3 size={18} />
@@ -1408,7 +1407,7 @@ export default function App() {
                       }
                       setCurrentView('daily');
                     }}
-                    className={`p-2 rounded-lg transition-all relative ${urgentCount > 0 ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                    className={`p-1.5 sm:p-2 rounded-lg transition-all relative ${urgentCount > 0 ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                     title={urgentCount > 0 ? `${urgentCount} 个紧急任务` : '无紧急任务'}
                 >
                     {urgentCount > 0 ? <BellRing size={18} className="animate-pulse" /> : <Bell size={18} />}
@@ -1421,10 +1420,10 @@ export default function App() {
               );
             })()}
             
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode Toggle - hidden on very small screens */}
             <button 
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                className="hidden sm:block p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
                 title={darkMode ? '切换亮色模式' : '切换深色模式'}
             >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -1432,9 +1431,9 @@ export default function App() {
             
             <button 
                 onClick={() => setIsProjectModalOpen(true)}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-medium whitespace-nowrap"
+                className="flex items-center gap-1 sm:gap-2 bg-indigo-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap"
             >
-                <Plus size={18} /> 新建项目
+                <Plus size={16} /> <span className="hidden sm:inline">新建项目</span><span className="sm:hidden">新建</span>
             </button>
             
             {/* User Menu */}
@@ -1500,7 +1499,7 @@ export default function App() {
                 </div>
 
                 <div className="flex-1 overflow-x-auto">
-                    <div className="grid grid-cols-3 gap-4 h-full min-w-[900px] px-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full md:min-w-[900px] px-2">
                         {/* Pending Column */}
                         <div className="bg-amber-50/50 rounded-xl border border-amber-200 flex flex-col overflow-hidden">
                             <div className="p-4 border-b border-amber-200 bg-amber-100/50">
@@ -1631,33 +1630,33 @@ export default function App() {
         {currentView === 'daily' && (
             <div className="max-w-7xl mx-auto h-full overflow-hidden flex flex-col gap-4">
                  {/* Quick Add & Date Header */}
-                 <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2 sm:gap-4">
                     {/* Quick Add Input */}
                     <form onSubmit={handleQuickAddTask} className="flex-1 flex gap-2">
                       <input
                         type="text"
                         value={quickTaskInput}
                         onChange={(e) => setQuickTaskInput(e.target.value)}
-                        placeholder="快速添加任务，按回车确认..."
-                        className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 shadow-sm"
+                        placeholder="快速添加任务..."
+                        className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 shadow-sm"
                       />
                       <button
                         type="submit"
                         disabled={!quickTaskInput.trim()}
-                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2"
                       >
-                        <Plus size={16} /> 添加
+                        <Plus size={16} /> <span className="hidden sm:inline">添加</span>
                       </button>
                     </form>
                  </div>
                  
                  {/* Date & Filter Header */}
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200">
-                        <button onClick={handlePrevDay} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"><ChevronLeft size={18} /></button>
-                        <div className="text-center min-w-[100px]">
-                            <h2 className="text-base font-bold text-slate-800">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                      <div className="flex items-center gap-1 sm:gap-2 bg-white px-2 sm:px-3 py-2 rounded-xl shadow-sm border border-slate-200">
+                        <button onClick={handlePrevDay} className="p-1 sm:p-1.5 rounded-full hover:bg-slate-100 text-slate-500"><ChevronLeft size={16} /></button>
+                        <div className="text-center min-w-[80px] sm:min-w-[100px]">
+                            <h2 className="text-sm sm:text-base font-bold text-slate-800">
                                 {viewDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
                             </h2>
                             <p className="text-[10px] text-slate-500 font-medium">
@@ -1672,55 +1671,57 @@ export default function App() {
                               setViewDate(new Date(e.target.value + 'T00:00:00'));
                             }
                           }}
-                          className="w-8 h-8 cursor-pointer bg-transparent border-none text-transparent [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                          className="w-6 sm:w-8 h-6 sm:h-8 cursor-pointer bg-transparent border-none text-transparent [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                           title="选择日期"
                         />
-                        <button onClick={handleNextDay} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"><ChevronRight size={18} /></button>
+                        <button onClick={handleNextDay} className="p-1 sm:p-1.5 rounded-full hover:bg-slate-100 text-slate-500"><ChevronRight size={16} /></button>
                       </div>
                       
-                      {/* Filter Tabs */}
-                      <div className="flex bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
+                      <button 
+                          onClick={() => setViewDate(new Date())} 
+                          className="text-xs font-bold text-indigo-600 px-2 sm:px-3 py-1.5 sm:py-2 bg-white rounded-lg hover:bg-indigo-50 border border-indigo-100 shadow-sm"
+                      >
+                          今天
+                      </button>
+                      
+                      {/* Filter Tabs - hidden on very small screens */}
+                      <div className="hidden sm:flex bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
                         <button
                           onClick={() => setDailyFilter('all')}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                           全部
                         </button>
                         <button
                           onClick={() => setDailyFilter('project')}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'project' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'project' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                          项目任务
+                          项目
                         </button>
                         <button
                           onClick={() => setDailyFilter('standalone')}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'standalone' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-colors ${dailyFilter === 'standalone' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                          临时事务
+                          临时
                         </button>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
                         <button 
-                            onClick={() => setViewDate(new Date())} 
-                            className="text-xs font-bold text-indigo-600 px-3 py-2 bg-white rounded-lg hover:bg-indigo-50 border border-indigo-100 shadow-sm"
-                        >
-                            今天
-                        </button>
-                        <button 
                             onClick={handleGenerateDailyReport}
                             disabled={isGenerating}
-                            className="text-xs bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-3 py-2 rounded-lg hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                            className="text-xs bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:shadow-lg flex items-center gap-1 sm:gap-2 disabled:opacity-50"
                         >
                             {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                            生成日报
+                            <span className="hidden sm:inline">生成日报</span>
+                            <span className="sm:hidden">日报</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Eisenhower Matrix Grid */}
-                <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 sm:grid-rows-2 gap-3 sm:gap-4 min-h-0 overflow-y-auto sm:overflow-hidden">
                     {quadrants.map((quad) => (
                         <div 
                             key={quad.id}
@@ -2301,12 +2302,22 @@ export default function App() {
                           AI 生成项目计划
                       </button>
                       <button 
-                          onClick={() => {
-                              const newId = Date.now();
-                              setProjects([...projects, { id: newId, title: newProjectTitle, description: newProjectGoal }]);
-                              setIsProjectModalOpen(false);
-                              setActiveProjectId(newId);
-                              setCurrentView('board');
+                          onClick={async () => {
+                              try {
+                                  const projectRes = await api.post('/projects', {
+                                      title: newProjectTitle,
+                                      description: newProjectGoal
+                                  });
+                                  setProjects([...projects, projectRes.data]);
+                                  setIsProjectModalOpen(false);
+                                  setNewProjectTitle("");
+                                  setNewProjectGoal("");
+                                  setActiveProjectId(projectRes.data.id);
+                                  setCurrentView('board');
+                              } catch (err) {
+                                  console.error('Failed to create project', err);
+                                  alert('创建项目失败');
+                              }
                           }}
                           disabled={!newProjectTitle.trim() || isGenerating}
                           className="px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
