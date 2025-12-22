@@ -1,4 +1,8 @@
-# MchengFlow 部署指南
+# MchengFlow
+
+一款轻量级的个人/团队项目与任务管理系统。基于 React + Express + SQLite 构建，支持看板视图、四象限时间管理、AI 智能助手，开箱即用，支持 Docker 一键部署。
+
+---
 
 ## 系统功能
 

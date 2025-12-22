@@ -51,7 +51,8 @@ import {
   Pin,
   Palette,
   Archive,
-  ArchiveRestore
+  ArchiveRestore,
+  Github
 } from 'lucide-react';
 
 /**
@@ -1409,7 +1410,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 pb-12">
       
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm h-auto sm:h-[73px]">
@@ -2930,6 +2931,19 @@ export default function App() {
           </div>
         </div>
       </Modal>
+
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-slate-200 py-2 px-4 flex items-center justify-center z-10">
+        <a 
+          href="https://github.com/inspoaibox/MchengFlow" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors text-sm"
+        >
+          <Github size={18} />
+          <span className="hidden sm:inline">GitHub</span>
+        </a>
+      </footer>
 
     </div>
   );
