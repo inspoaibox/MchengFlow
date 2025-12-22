@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Sparkles, Loader2, Shield } from 'lucide-react';
+import { Sparkles, Loader2, Shield, Github } from 'lucide-react';
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', password: '', email: '' });
@@ -129,6 +129,15 @@ export default function Register() {
           已有账号？<Link to="/login" className="text-indigo-600 font-medium hover:underline">立即登录</Link>
         </p>
       </div>
+      
+      <a 
+        href="https://github.com/inspoaibox/MchengFlow" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-3 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition-colors"
+      >
+        <Github size={18} />
+      </a>
     </div>
   );
 }

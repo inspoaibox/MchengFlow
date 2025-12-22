@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Github } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -93,6 +93,15 @@ export default function Login() {
           还没有账号？<Link to="/register" className="text-indigo-600 font-medium hover:underline">立即注册</Link>
         </p>
       </div>
+      
+      <a 
+        href="https://github.com/inspoaibox/MchengFlow" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-3 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition-colors"
+      >
+        <Github size={18} />
+      </a>
     </div>
   );
 }
