@@ -1410,7 +1410,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 pb-10">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
       
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm h-auto sm:h-[73px]">
@@ -2933,14 +2933,16 @@ export default function App() {
       </Modal>
 
       {/* Footer */}
-      <a 
-        href="https://github.com/inspoaibox/MchengFlow" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="fixed bottom-3 left-1/2 -translate-x-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10"
-      >
-        <Github size={18} />
-      </a>
+      <div className="flex justify-center py-4">
+        <a 
+          href="https://github.com/inspoaibox/MchengFlow" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <Github size={18} />
+        </a>
+      </div>
 
     </div>
   );
