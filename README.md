@@ -2,11 +2,14 @@
 
 ## 系统功能
 
-- 多用户项目管理系统（首个注册用户自动成为管理员）
+- 多用户项目管理系统（首个注册用户自动成为管理员，用户数据隔离）
 - 看板式任务管理（四象限/列表视图）
+- 项目状态管理（待开始/进行中/已完成）
+- 任务开始日期与截止日期
+- 项目/任务负责人管理（支持多人）
 - AI 智能助手（支持 OpenAI / Gemini / 兼容 API）
-- 任务附件上传、标签、负责人管理
-- 深色模式、任务搜索、统计仪表盘
+- 任务附件上传、标签管理
+- 深色模式、任务搜索（Ctrl+K）、统计仪表盘
 - PWA 支持、任务提醒通知
 - 数据备份与导入
 
@@ -58,6 +61,19 @@ NODE_ENV=production npm start
 
 ---
 
+## 开发模式
+
+```bash
+npm run dev
+```
+
+开发模式下：
+- 前端运行在 `http://localhost:3100`（Vite 热更新）
+- 后端运行在 `http://localhost:3101`
+- 前端自动代理 `/api` 请求到后端
+
+---
+
 ## 一键部署命令
 
 ```bash
@@ -79,6 +95,9 @@ npm install -g pm2
 ```bash
 # 构建
 npm run deploy
+
+# 创建日志目录
+mkdir logs
 
 # 使用 PM2 启动
 pm2 start ecosystem.config.cjs
@@ -189,13 +208,20 @@ server {
 ```
 mchengflow/
 ├── dist/              # 前端构建输出
+├── logs/              # PM2 日志目录
 ├── server/
 │   ├── db/
 │   │   └── app.db     # SQLite 数据库文件
 │   ├── uploads/       # 附件上传目录
+│   ├── routes/        # API 路由
 │   └── index.js       # 服务器入口
+├── src/               # 前端源码
+├── public/            # 静态资源（PWA manifest、Service Worker）
 ├── prisma/
 │   └── schema.prisma  # 数据库模型
+├── ecosystem.config.cjs  # PM2 配置
+├── docker-compose.yml    # Docker Compose 配置
+├── Dockerfile            # Docker 构建文件
 └── package.json
 ```
 
