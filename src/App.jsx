@@ -1410,7 +1410,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 pb-10">
       
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm h-auto sm:h-[73px]">
